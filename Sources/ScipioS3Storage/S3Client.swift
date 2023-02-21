@@ -29,13 +29,11 @@ struct ObjectStorageClient {
         self.storageConfig = storageConfig
     }
 
-    func putObject() async throws {
-        let data = "hello".data(using: .utf8)!
-        let dataStream = ByteStream.from(data: data)
+    func putObject(_ stream: ByteStream, at key: String) async throws {
         let putObjectInput = PutObjectInput(
-            body: dataStream,
+            body: stream,
             bucket: storageConfig.bucket,
-            key: "test"
+            key: key
         )
         let response = try await client.putObject(input: putObjectInput)
         print(response.debugDescription)

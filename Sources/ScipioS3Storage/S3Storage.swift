@@ -35,10 +35,13 @@ public struct S3Storage: CacheStorage {
     }
 
     public func cacheFramework(_ frameworkPath: URL, for cacheKey: ScipioKit.CacheKey) async {
+        let compressor = Compressor()
         do {
-            try await storageClient.putObject()
+            let stream = try compressor.compress(frameworkPath)
+            let archiveName = frameworkPath.lastPathComponent + ".aar"
+            try await storageClient.putObject(stream, at: archiveName)
         } catch {
-            print(error)
+
         }
     }
 }
