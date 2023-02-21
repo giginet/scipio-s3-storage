@@ -14,9 +14,9 @@ let package = Package(
             targets: ["ScipioS3Storage"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/giginet/Scipio.git", 
-                 from: "0.7.0"),
-        .package(url: "https://github.com/awslabs/aws-sdk-swift.git", 
+        .package(url: "https://github.com/giginet/Scipio.git",
+                 branch: "main"),
+        .package(url: "https://github.com/awslabs/aws-sdk-swift.git",
                  from: "0.10.0"),
     ],
     targets: [
