@@ -16,6 +16,9 @@ struct Compressor {
 
         let source = FilePath(directoryPath.path)
 
+        let archivePath = temporaryDirectory.appendingPathComponent("\(UUID().uuidString).aar")
+        defer { try? fileManager.removeItem(at: archivePath) }
+
         try ArchiveByteStream.withFileStream(
             path: FilePath(archivePath.path),
             mode: .writeOnly,
@@ -32,7 +35,6 @@ struct Compressor {
         guard let data = fileManager.contents(atPath: archivePath.path) else {
             throw Error.compressionError
         }
-        defer { try? fileManager.removeItem(at: archivePath) }
 
         return ByteStream.from(data: data)
     }
@@ -64,10 +66,6 @@ struct Compressor {
     enum Error: LocalizedError {
         case initializationError
         case compressionError
-    }
-
-    private var archivePath: URL {
-        temporaryDirectory.appendingPathComponent("xcframework.aar")
     }
 
     private var temporaryDirectory: URL {
