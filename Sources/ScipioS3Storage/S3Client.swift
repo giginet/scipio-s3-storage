@@ -7,6 +7,10 @@ struct ObjectStorageClient {
     private let client: S3Client
     private let storageConfig: S3StorageConfig
 
+    enum Error: LocalizedError {
+        case emptyObject
+    }
+
     init(storageConfig: S3StorageConfig) throws {
         var defaultConfig = try DefaultSDKRuntimeConfiguration("S3Client",
                                                                clientLogMode: .requestAndResponse
@@ -44,7 +48,7 @@ struct ObjectStorageClient {
             key: key
         )
         do {
-            let response = try await client.headObject(input: headObjectInput)
+            let _ = try await client.headObject(input: headObjectInput)
         } catch {
             guard let httpResponse = error.httpResponse, httpResponse.statusCode == .notFound else {
                 throw error
@@ -52,6 +56,18 @@ struct ObjectStorageClient {
             return false
         }
         return true
+    }
+
+    func fetchObject(at key: String) async throws -> Data {
+        let getObjectInput = GetObjectInput(
+            bucket: storageConfig.bucket,
+            key: key
+        )
+        let response = try await client.getObject(input: getObjectInput)
+        guard let body = response.body else {
+            throw Error.emptyObject
+        }
+        return body.toBytes().getData()
     }
 }
 
