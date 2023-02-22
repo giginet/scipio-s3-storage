@@ -18,15 +18,15 @@ public struct S3StorageConfig {
 }
 
 public struct S3Storage: CacheStorage {
-
-
+    private let storagePrefix: String?
     private let storageClient: ObjectStorageClient
 
-    public init(config: S3StorageConfig) async throws {
+    public init(config: S3StorageConfig, storagePrefix: String? = nil) async throws {
         self.storageClient = try ObjectStorageClient(storageConfig: config)
+        self.storagePrefix = storagePrefix
     }
 
-    public func existsValidCache(for cacheKey: ScipioKit.CacheKey) async -> Bool {
+    public func existsValidCache(for cacheKey: ScipioKit.CacheKey) async throws -> Bool {
         return false
     }
 
@@ -34,14 +34,19 @@ public struct S3Storage: CacheStorage {
         
     }
 
-    public func cacheFramework(_ frameworkPath: URL, for cacheKey: ScipioKit.CacheKey) async {
+    public func cacheFramework(_ frameworkPath: URL, for cacheKey: ScipioKit.CacheKey) async throws {
         let compressor = Compressor()
-        do {
-            let stream = try compressor.compress(frameworkPath)
-            let archiveName = frameworkPath.lastPathComponent + ".aar"
-            try await storageClient.putObject(stream, at: archiveName)
-        } catch {
+        let stream = try compressor.compress(frameworkPath)
+        let objectStorageKey = try constructObjectStorageKey(from: cacheKey)
+        try await storageClient.putObject(stream, at: objectStorageKey)
+    }
 
-        }
+    private func constructObjectStorageKey(from cacheKey: CacheKey) throws -> String {
+        let frameworkName = cacheKey.targetName
+        let checksum = try cacheKey.calculateChecksum()
+        let archiveName = "\(checksum).aar"
+        return [storagePrefix, frameworkName, archiveName]
+            .compactMap { $0 }
+            .joined(separator: "/")
     }
 }

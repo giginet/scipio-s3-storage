@@ -15,7 +15,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/giginet/Scipio.git",
-                 branch: "main"),
+                 branch: "support-remote-cache"),
         .package(url: "https://github.com/awslabs/aws-sdk-swift.git",
                  from: "0.10.0"),
     ],
