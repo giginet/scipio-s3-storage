@@ -1,5 +1,4 @@
 import Foundation
-import ClientRuntime
 import System
 import Compression
 import AppleArchive
@@ -11,7 +10,7 @@ struct Compressor {
         try? fileManager.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
     }
 
-    func compress(_ directoryPath: URL) throws -> ByteStream {
+    func compress(_ directoryPath: URL) throws -> Data {
         guard let keySet else { throw Error.initializationError }
 
         let source = FilePath(directoryPath.path)
@@ -36,10 +35,10 @@ struct Compressor {
             throw Error.compressionError
         }
 
-        return ByteStream.from(data: data)
+        return data
     }
 
-    func extract(_ archiveData: Data, to destinationPath: URL) async throws {
+    func extract(_ archiveData: Data, to destinationPath: URL) throws {
         let destination = FilePath(destinationPath.path)
 
         let temporaryPath = temporaryDirectory.appendingPathComponent("\(UUID().uuidString).aar")

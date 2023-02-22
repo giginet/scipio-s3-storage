@@ -41,12 +41,13 @@ public struct S3Storage: CacheStorage {
         let objectStorageKey = try constructObjectStorageKey(from: cacheKey)
         let archiveData = try await storageClient.fetchObject(at: objectStorageKey)
         let destinationPath = destinationDir.appendingPathComponent("\(cacheKey.targetName).xcframework")
-        try await compressor.extract(archiveData, to: destinationPath)
+        try compressor.extract(archiveData, to: destinationPath)
     }
 
     public func cacheFramework(_ frameworkPath: URL, for cacheKey: ScipioKit.CacheKey) async throws {
-        let stream = try compressor.compress(frameworkPath)
+        let data = try compressor.compress(frameworkPath)
         let objectStorageKey = try constructObjectStorageKey(from: cacheKey)
+        let stream = ByteStream.from(data: data)
         try await storageClient.putObject(stream, at: objectStorageKey)
     }
 
