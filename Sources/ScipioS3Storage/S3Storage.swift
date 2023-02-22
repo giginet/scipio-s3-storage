@@ -1,5 +1,6 @@
 import Foundation
 import ScipioKit
+import ClientRuntime
 
 public struct S3StorageConfig {
     public var accessKeyID: String
@@ -27,11 +28,16 @@ public struct S3Storage: CacheStorage {
     }
 
     public func existsValidCache(for cacheKey: ScipioKit.CacheKey) async throws -> Bool {
-        return false
+        let objectStorageKey = try constructObjectStorageKey(from: cacheKey)
+        do {
+            return try await storageClient.isExistObject(at: objectStorageKey)
+        } catch {
+            throw error
+        }
     }
 
     public func fetchArtifacts(for cacheKey: ScipioKit.CacheKey, to destinationDir: URL) async throws {
-        
+
     }
 
     public func cacheFramework(_ frameworkPath: URL, for cacheKey: ScipioKit.CacheKey) async throws {
