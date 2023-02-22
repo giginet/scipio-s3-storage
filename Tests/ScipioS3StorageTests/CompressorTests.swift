@@ -34,12 +34,14 @@ final class CompressorTests: XCTestCase {
         let extractedPath = workspacePath.appendingPathComponent("\(UUID().uuidString).xcframework")
         try compressor.extract(compressed, to: extractedPath)
 
-        let fileContents = try XCTUnwrap(fileManager.contents(atPath: extractedPath.appendingPathComponent(fileName).path))
+        let fileContents = try XCTUnwrap(
+            fileManager.contents(atPath: extractedPath.appendingPathComponent(fileName).path)
+        )
         XCTAssertEqual(
             String(data: fileContents, encoding: .utf8),
             fileBody
         )
-        
+
         addTeardownBlock {
             try? self.fileManager.removeItem(at: xcframeworkPath)
         }

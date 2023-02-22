@@ -39,7 +39,7 @@ struct ObjectStorageClient {
             bucket: storageConfig.bucket,
             key: key
         )
-        let _ = try await client.putObject(input: putObjectInput)
+        _ = try await client.putObject(input: putObjectInput)
     }
 
     func isExistObject(at key: String) async throws -> Bool {
@@ -48,7 +48,7 @@ struct ObjectStorageClient {
             key: key
         )
         do {
-            let _ = try await client.headObject(input: headObjectInput)
+            _ = try await client.headObject(input: headObjectInput)
         } catch {
             guard let httpResponse = error.httpResponse, httpResponse.statusCode == .notFound else {
                 throw error
@@ -76,14 +76,13 @@ extension Error {
         if let clientError = self as? SdkError<AWSS3.HeadObjectOutputError>,
            case .client(let clientError, _) = clientError,
            case .retryError(let retryError) = clientError,
-           let innerClientError = retryError as? SdkError<AWSS3.HeadObjectOutputError>
-        {
+           let innerClientError = retryError as? SdkError<AWSS3.HeadObjectOutputError> {
             switch innerClientError {
             case .client(_, let response):
                 return response
             case .service(_, let response):
                 return response
-            case .unknown(_):
+            case .unknown:
                 return nil
             }
         }

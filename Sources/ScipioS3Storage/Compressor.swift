@@ -47,14 +47,18 @@ struct Compressor {
 
         try fileManager.createDirectory(at: destinationPath, withIntermediateDirectories: true)
 
-        let _ = try ArchiveByteStream.withFileStream(
+        _ = try ArchiveByteStream.withFileStream(
             path: FilePath(temporaryPath.path),
             mode: .readOnly,
             options: [],
-            permissions: [.ownerRead, .groupRead, .otherRead]) { file in
+            permissions: [.ownerRead, .groupRead, .otherRead]
+        ) { file in
             try ArchiveByteStream.withDecompressionStream(readingFrom: file) { decompress in
                 try ArchiveStream.withDecodeStream(readingFrom: decompress) { decode in
-                    try ArchiveStream.withExtractStream(extractingTo: destination, flags: [.ignoreOperationNotPermitted]) { extract in
+                    try ArchiveStream.withExtractStream(
+                        extractingTo: destination,
+                        flags: [.ignoreOperationNotPermitted]
+                    ) { extract in
                         try ArchiveStream.process(readingFrom: decode, writingTo: extract)
                     }
                 }
