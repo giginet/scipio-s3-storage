@@ -3,28 +3,40 @@ import ScipioKit
 import ClientRuntime
 
 public struct S3StorageConfig {
-    public var accessKeyID: String
-    public var secretAccessKey: String
     public var bucket: String
     public var region: String
     public var endpoint: URL
+    public var authenticationMode: AuthenticationMode
 
-    public init(accessKeyID: String, secretAccessKey: String, bucket: String, region: String, endpoint: URL) {
-        self.accessKeyID = accessKeyID
-        self.secretAccessKey = secretAccessKey
+    public init(authenticationMode: AuthenticationMode, bucket: String, region: String, endpoint: URL) {
+        self.authenticationMode = authenticationMode
         self.bucket = bucket
         self.region = region
         self.endpoint = endpoint
+    }
+
+    public enum AuthenticationMode {
+        case usePublicURL
+        case authorized(accessKeyID: String, secretAccessKey: String)
+    }
+
+    fileprivate var ObjectStorageClientType: any ObjectStorageClient.Type {
+        switch authenticationMode {
+        case .usePublicURL:
+            return PublicURLObjectStorageClient.self
+        case .authorized:
+            return APIObjectStorageClient.self
+        }
     }
 }
 
 public struct S3Storage: CacheStorage {
     private let storagePrefix: String?
-    private let storageClient: ObjectStorageClient
+    private let storageClient: any ObjectStorageClient
     private let compressor = Compressor()
 
     public init(config: S3StorageConfig, storagePrefix: String? = nil) async throws {
-        self.storageClient = try ObjectStorageClient(storageConfig: config)
+        self.storageClient = try config.ObjectStorageClientType.init(storageConfig: config)
         self.storagePrefix = storagePrefix
     }
 

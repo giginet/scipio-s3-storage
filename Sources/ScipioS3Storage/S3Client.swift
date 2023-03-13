@@ -3,38 +3,59 @@ import AWSS3
 import ClientRuntime
 import AWSClientRuntime
 
-struct ObjectStorageClient {
+protocol ObjectStorageClient {
+    init(storageConfig: S3StorageConfig) throws
+
+    func putObject(_ stream: ByteStream, at key: String) async throws
+    func isExistObject(at key: String) async throws -> Bool
+    func fetchObject(at key: String) async throws -> Data
+}
+
+struct APIObjectStorageClient: ObjectStorageClient {
     private let client: S3Client
     private let storageConfig: S3StorageConfig
 
     enum Error: LocalizedError {
         case emptyObject
+
+        var errorDescription: String? {
+            switch self {
+            case .emptyObject:
+                return "No object is found"
+            }
+        }
     }
 
     init(storageConfig: S3StorageConfig) throws {
-        var defaultConfig = try DefaultSDKRuntimeConfiguration("S3Client",
-                                                               clientLogMode: .requestAndResponse
-        )
-        defaultConfig.endpoint = storageConfig.endpoint.absoluteString
-        let credentialsProvider = try AWSCredentialsProvider.fromStatic(
-            AWSCredentialsProviderStaticConfig(
-                accessKey: storageConfig.accessKeyID,
-                secret: storageConfig.secretAccessKey
+        switch storageConfig.authenticationMode {
+        case .authorized(let accessKeyID, let secretAccessKey):
+            var defaultConfig = try DefaultSDKRuntimeConfiguration("S3Client",
+                                                                   clientLogMode: .requestAndResponse
             )
-        )
-        let s3Config = try S3Client.S3ClientConfiguration(
-            credentialsProvider: credentialsProvider,
-            endpoint: storageConfig.endpoint.absoluteString,
-            forcePathStyle: true,
-            region: storageConfig.region,
-            runtimeConfig: defaultConfig
-        )
-        self.client = AWSS3.S3Client(config: s3Config)
+            defaultConfig.endpoint = storageConfig.endpoint.absoluteString
+            let credentialsProvider = try AWSCredentialsProvider.fromStatic(
+                AWSCredentialsProviderStaticConfig(
+                    accessKey: accessKeyID,
+                    secret: secretAccessKey
+                )
+            )
+            let s3Config = try S3Client.S3ClientConfiguration(
+                credentialsProvider: credentialsProvider,
+                endpoint: storageConfig.endpoint.absoluteString,
+                forcePathStyle: true,
+                region: storageConfig.region,
+                runtimeConfig: defaultConfig
+            )
+            self.client = AWSS3.S3Client(config: s3Config)
+        case .usePublicURL:
+            fatalError("Invalid authorizationMode")
+        }
         self.storageConfig = storageConfig
     }
 
     func putObject(_ stream: ByteStream, at key: String) async throws {
         let putObjectInput = PutObjectInput(
+            acl: .publicRead,
             body: stream,
             bucket: storageConfig.bucket,
             key: key
@@ -68,6 +89,43 @@ struct ObjectStorageClient {
             throw Error.emptyObject
         }
         return body.toBytes().getData()
+    }
+}
+
+struct PublicURLObjectStorageClient: ObjectStorageClient {
+    private let storageConfig: S3StorageConfig
+
+    enum Error: LocalizedError {
+        case putObjectIsNotSupported
+
+        var errorDescription: String? {
+            switch self {
+            case .putObjectIsNotSupported:
+                return "putObject requires authentication"
+            }
+        }
+    }
+
+    init(storageConfig: S3StorageConfig) throws {
+        self.storageConfig = storageConfig
+    }
+
+    func putObject(_ stream: ByteStream, at key: String) async throws {
+        throw Error.putObjectIsNotSupported
+    }
+
+    func isExistObject(at key: String) async throws -> Bool {
+        return true
+    }
+
+    func fetchObject(at key: String) async throws -> Data {
+        return Data()
+    }
+
+    private func constructPublicURL(of key: String) -> URL {
+        storageConfig.endpoint
+            .appendingPathComponent(storageConfig.bucket)
+            .appendingPathComponent(key)
     }
 }
 
