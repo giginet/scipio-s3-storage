@@ -94,14 +94,18 @@ struct APIObjectStorageClient: ObjectStorageClient {
 
 struct PublicURLObjectStorageClient: ObjectStorageClient {
     private let storageConfig: S3StorageConfig
+    private let httpClient: URLSession = .shared
 
     enum Error: LocalizedError {
         case putObjectIsNotSupported
+        case objectIsNotFound(String)
 
         var errorDescription: String? {
             switch self {
             case .putObjectIsNotSupported:
                 return "putObject requires authentication"
+            case .objectIsNotFound(let key):
+                return "Any object for \"\(key)\" is not found"
             }
         }
     }
@@ -115,11 +119,29 @@ struct PublicURLObjectStorageClient: ObjectStorageClient {
     }
 
     func isExistObject(at key: String) async throws -> Bool {
-        return true
+        let url = constructPublicURL(of: key)
+        let request = {
+            var request = URLRequest(url: url)
+            request.httpMethod = "HEAD"
+            return request
+        }()
+        let (_, httpResponse) = try await httpClient.data(for: request)
+
+        guard let httpResponse = httpResponse as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            return false
+        }
+        return httpResponse.statusCode == 200
     }
 
     func fetchObject(at key: String) async throws -> Data {
-        return Data()
+        let url = constructPublicURL(of: key)
+        let request = URLRequest(url: url)
+        let (data, httpResponse) = try await httpClient.data(for: request)
+
+        guard let httpResponse = httpResponse as? HTTPURLResponse else {
+            throw Error.objectIsNotFound(key)
+        }
+        return data
     }
 
     private func constructPublicURL(of key: String) -> URL {
