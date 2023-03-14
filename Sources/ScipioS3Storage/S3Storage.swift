@@ -35,7 +35,7 @@ public struct S3Storage: CacheStorage {
     private let storageClient: any ObjectStorageClient
     private let compressor = Compressor()
 
-    public init(config: S3StorageConfig, storagePrefix: String? = nil) async throws {
+    public init(config: S3StorageConfig, storagePrefix: String? = nil) throws {
         self.storageClient = try config.ObjectStorageClientType.init(storageConfig: config)
         self.storagePrefix = storagePrefix
     }
