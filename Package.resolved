@@ -32,8 +32,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/giginet/Scipio.git",
       "state" : {
-        "branch" : "support-remote-cache",
-        "revision" : "ca0d2af981c74b12020ea9a3773f697800c15b69"
+        "branch" : "0.9.0",
+        "revision" : "7463af0aa9205f5717581311cac68adb20de3ba2"
       }
     },
     {
@@ -102,9 +102,9 @@
     {
       "identity" : "swift-package-manager",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-package-manager.git",
+      "location" : "https://github.com/giginet/swift-package-manager.git",
       "state" : {
-        "revision" : "4582d479ff0684e81d64897949c4d8d69187ec35"
+        "revision" : "11c88e87e6874a570711d18462ca0ea43ff7ff5e"
       }
     },
     {
