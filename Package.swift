@@ -15,17 +15,24 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/giginet/Scipio.git",
-                 revision: "0.9.0"),
-        .package(url: "https://github.com/awslabs/aws-sdk-swift.git",
-                 from: "0.10.0"),
+                 branch: "support-async-cache"),
+        // .package(path: "/Users/jp30698/work/Scipio"),
+        .package(url: "https://github.com/soto-project/soto-codegenerator", 
+                 from: "0.6.0"),
+        .package(url: "https://github.com/soto-project/soto-core.git", 
+                 from: "6.4.0"),
     ],
     targets: [
         .target(
             name: "ScipioS3Storage",
             dependencies: [
                 .product(name: "ScipioKit", package: "Scipio"),
-                .product(name: "AWSS3", package: "aws-sdk-swift"),
-            ]),
+                .product(name: "SotoCore", package: "soto-core"),
+            ],
+            plugins: [
+                .plugin(name: "SotoCodeGeneratorPlugin", package: "soto-codegenerator"),
+            ]
+        ),
         .testTarget(
             name: "ScipioS3StorageTests",
             dependencies: ["ScipioS3Storage"]),
