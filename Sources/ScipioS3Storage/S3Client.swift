@@ -9,7 +9,8 @@ protocol ObjectStorageClient {
     func fetchObject(at key: String) async throws -> Data
 }
 
-struct APIObjectStorageClient: ObjectStorageClient {
+class APIObjectStorageClient: ObjectStorageClient {
+    private let awsClient: AWSClient
     private let client: S3
     private let storageConfig: S3StorageConfig
 
@@ -24,21 +25,27 @@ struct APIObjectStorageClient: ObjectStorageClient {
         }
     }
 
-    init(storageConfig: S3StorageConfig) throws {
+    required init(storageConfig: S3StorageConfig) throws {
         switch storageConfig.authenticationMode {
         case .authorized(let accessKeyID, let secretAccessKey):
-            let awsClient = AWSClient(credentialProvider:
+            awsClient = AWSClient(
+                credentialProvider:
                     .static(accessKeyId: accessKeyID, secretAccessKey: secretAccessKey),
-                    httpClientProvider: .createNew
+                httpClientProvider: .createNew
             )
             client = S3(
                 client: awsClient,
-                region: .init(awsRegionName: storageConfig.region)
+                region: .init(awsRegionName: storageConfig.region),
+                endpoint: storageConfig.endpoint.path
             )
         case .usePublicURL:
             fatalError("Invalid authorizationMode")
         }
         self.storageConfig = storageConfig
+    }
+
+    deinit {
+        try! awsClient.syncShutdown()
     }
 
     func putObject(_ data: Data, at key: String) async throws {
