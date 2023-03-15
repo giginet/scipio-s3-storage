@@ -1,6 +1,5 @@
 import Foundation
 import ScipioKit
-import ClientRuntime
 
 public struct S3StorageConfig {
     public var bucket: String
@@ -59,8 +58,8 @@ public struct S3Storage: CacheStorage {
     public func cacheFramework(_ frameworkPath: URL, for cacheKey: ScipioKit.CacheKey) async throws {
         let data = try compressor.compress(frameworkPath)
         let objectStorageKey = try constructObjectStorageKey(from: cacheKey)
-        let stream = ByteStream.from(data: data)
-        try await storageClient.putObject(stream, at: objectStorageKey)
+//        let stream = ByteStream.from(data: data)
+//        try await storageClient.putObject(stream, at: objectStorageKey)
     }
 
     private func constructObjectStorageKey(from cacheKey: CacheKey) throws -> String {
