@@ -36,7 +36,7 @@ class APIObjectStorageClient: ObjectStorageClient {
             client = S3(
                 client: awsClient,
                 region: .init(awsRegionName: storageConfig.region),
-                endpoint: storageConfig.endpoint.path
+                endpoint: storageConfig.endpoint.absoluteString
             )
         case .usePublicURL:
             fatalError("Invalid authorizationMode")
