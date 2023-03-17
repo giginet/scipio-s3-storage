@@ -6,12 +6,20 @@ public struct S3StorageConfig {
     public var region: String
     public var endpoint: URL
     public var authenticationMode: AuthenticationMode
+    public var shouldPublishObject: Bool
 
-    public init(authenticationMode: AuthenticationMode, bucket: String, region: String, endpoint: URL) {
+    public init(
+        authenticationMode: AuthenticationMode,
+        bucket: String,
+        region: String,
+        endpoint: URL,
+        shouldPublishObject: Bool = false
+    ) {
         self.authenticationMode = authenticationMode
         self.bucket = bucket
         self.region = region
         self.endpoint = endpoint
+        self.shouldPublishObject = shouldPublishObject
     }
 
     public enum AuthenticationMode {

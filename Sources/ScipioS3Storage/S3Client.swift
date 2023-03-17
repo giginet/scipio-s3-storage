@@ -49,8 +49,9 @@ class APIObjectStorageClient: ObjectStorageClient {
     }
 
     func putObject(_ data: Data, at key: String) async throws {
+        let acl: S3.ObjectCannedACL = storageConfig.shouldPublishObject ? .publicRead : .authenticatedRead
         let putObjectRequest = S3.PutObjectRequest(
-            acl: .publicRead,
+            acl: acl,
             body: .byteBuffer(ByteBuffer(data: data)),
             bucket: storageConfig.bucket,
             key: key
