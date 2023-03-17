@@ -93,14 +93,17 @@ struct PublicURLObjectStorageClient: ObjectStorageClient {
 
     enum Error: LocalizedError {
         case putObjectIsNotSupported
-        case objectIsNotFound(String)
+        case unableToFetchObject(String)
 
         var errorDescription: String? {
             switch self {
             case .putObjectIsNotSupported:
                 return "putObject requires authentication"
-            case .objectIsNotFound(let key):
-                return "Any object for \"\(key)\" is not found"
+            case .unableToFetchObject(let key):
+                return """
+                Unable to fetch object for \"\(key)\".
+                Object may not exist or not be public
+                """
             }
         }
     }
@@ -134,8 +137,8 @@ struct PublicURLObjectStorageClient: ObjectStorageClient {
         let (data, httpResponse) = try await httpClient.data(for: request)
 
         // Public URL returns 403 when object is not found
-        guard let httpResponse = httpResponse as? HTTPURLResponse, httpResponse.statusCode == 403 else {
-            throw Error.objectIsNotFound(key)
+        guard let httpResponse = httpResponse as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            throw Error.unableToFetchObject(key)
         }
         return data
     }
