@@ -45,7 +45,7 @@ class APIObjectStorageClient: ObjectStorageClient {
     }
 
     deinit {
-        try! awsClient.syncShutdown()
+        try? awsClient.syncShutdown()
     }
 
     func putObject(_ data: Data, at key: String) async throws {

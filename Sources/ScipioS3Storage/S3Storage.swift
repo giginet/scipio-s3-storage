@@ -19,7 +19,7 @@ public struct S3StorageConfig {
         case authorized(accessKeyID: String, secretAccessKey: String)
     }
 
-    fileprivate var ObjectStorageClientType: any ObjectStorageClient.Type {
+    fileprivate var objectStorageClientType: any ObjectStorageClient.Type {
         switch authenticationMode {
         case .usePublicURL:
             return PublicURLObjectStorageClient.self
@@ -35,7 +35,7 @@ public struct S3Storage: CacheStorage {
     private let compressor = Compressor()
 
     public init(config: S3StorageConfig, storagePrefix: String? = nil) throws {
-        self.storageClient = try config.ObjectStorageClientType.init(storageConfig: config)
+        self.storageClient = try config.objectStorageClientType.init(storageConfig: config)
         self.storagePrefix = storagePrefix
     }
 
