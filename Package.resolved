@@ -41,8 +41,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/giginet/Scipio.git",
       "state" : {
-        "branch" : "support-async-cache",
-        "revision" : "507207bcc50936da6efd5d03582fa1be437e75b0"
+        "branch" : "0.11.0",
+        "revision" : "10b52087b98f7114cc140d03ef286dc4efbce72e"
       }
     },
     {
