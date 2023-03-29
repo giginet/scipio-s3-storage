@@ -59,7 +59,7 @@ public struct S3Storage: CacheStorage {
     public func fetchArtifacts(for cacheKey: ScipioKit.CacheKey, to destinationDir: URL) async throws {
         let objectStorageKey = try constructObjectStorageKey(from: cacheKey)
         let archiveData = try await storageClient.fetchObject(at: objectStorageKey)
-        let destinationPath = destinationDir.appendingPathComponent("\(cacheKey.targetName).xcframework")
+        let destinationPath = destinationDir.appendingPathComponent(cacheKey.frameworkName)
         try compressor.extract(archiveData, to: destinationPath)
     }
 
