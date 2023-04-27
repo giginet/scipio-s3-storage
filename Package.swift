@@ -15,7 +15,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/giginet/Scipio.git",
-                 revision: "0.11.0"),
+                 revision: "0.12.0"),
         .package(url: "https://github.com/soto-project/soto-codegenerator", 
                  from: "0.6.0"),
         .package(url: "https://github.com/soto-project/soto-core.git", 
