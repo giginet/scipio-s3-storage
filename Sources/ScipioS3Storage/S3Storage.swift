@@ -37,7 +37,7 @@ public struct S3StorageConfig {
     }
 }
 
-public struct S3Storage: CacheStorage {
+public actor S3Storage: CacheStorage {
     private let storagePrefix: String?
     private let storageClient: any ObjectStorageClient
     private let compressor = Compressor()
