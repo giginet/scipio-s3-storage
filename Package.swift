@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "scipio-s3-storage",
     platforms: [
-        .macOS(.v12),
+        .macOS(.v13),
     ],
     products: [
         .library(
@@ -20,12 +20,14 @@ let package = Package(
                  from: "0.6.0"),
         .package(url: "https://github.com/soto-project/soto-core.git", 
                  from: "6.4.0"),
+        .package(url: "https://github.com/giginet/scipio-cache-storage.git",
+                 revision: "ec3467983ae14356ffcba0ecf4e5c76c3dd80532"),
     ],
     targets: [
         .target(
             name: "ScipioS3Storage",
             dependencies: [
-                .product(name: "ScipioKit", package: "Scipio"),
+                .product(name: "ScipioStorage", package: "scipio-cache-storage"),
                 .product(name: "SotoCore", package: "soto-core"),
             ],
             plugins: [
