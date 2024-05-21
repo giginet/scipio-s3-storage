@@ -9,7 +9,7 @@ protocol ObjectStorageClient: Sendable {
     func fetchObject(at key: String) async throws -> Data
 }
 
-final actor APIObjectStorageClient: ObjectStorageClient {
+actor APIObjectStorageClient: ObjectStorageClient {
     private let awsClient: AWSClient
     private let client: S3
     private let storageConfig: S3StorageConfig
