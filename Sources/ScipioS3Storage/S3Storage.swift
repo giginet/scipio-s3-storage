@@ -1,7 +1,7 @@
 import Foundation
 import ScipioStorage
 
-public struct S3StorageConfig {
+public struct S3StorageConfig: Sendable {
     public var bucket: String
     public var region: String
     public var endpoint: URL
@@ -22,7 +22,7 @@ public struct S3StorageConfig {
         self.shouldPublishObject = shouldPublishObject
     }
 
-    public enum AuthenticationMode {
+    public enum AuthenticationMode: Sendable {
         case usePublicURL
         case authorized(accessKeyID: String, secretAccessKey: String)
     }
