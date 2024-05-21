@@ -14,11 +14,9 @@ let package = Package(
             targets: ["ScipioS3Storage"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/giginet/Scipio.git",
-                 revision: "0.12.0"),
         .package(url: "https://github.com/soto-project/soto-codegenerator", 
-                 from: "0.6.0"),
-        .package(url: "https://github.com/soto-project/soto-core.git", 
+                 from: "6.0.0"),
+        .package(url: "https://github.com/soto-project/soto-core.git",
                  from: "6.4.0"),
         .package(url: "https://github.com/giginet/scipio-cache-storage.git",
                  revision: "ec3467983ae14356ffcba0ecf4e5c76c3dd80532"),
