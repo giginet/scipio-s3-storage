@@ -40,6 +40,6 @@ final class AARArchiverTests: XCTestCase {
     }
 
     override func tearDown() async throws {
-        try? fileManager.removeItem(at: workspacePath)
+        try fileManager.removeItem(at: workspacePath)
     }
 }
