@@ -1,4 +1,4 @@
-// swift-tools-version: 5.7
+// swift-tools-version: 5.9
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "scipio-s3-storage",
     platforms: [
-        .macOS(.v12),
+        .macOS(.v13),
     ],
     products: [
         .library(
@@ -14,19 +14,22 @@ let package = Package(
             targets: ["ScipioS3Storage"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/giginet/Scipio.git",
-                 revision: "0.12.0"),
         .package(url: "https://github.com/soto-project/soto-codegenerator", 
-                 from: "0.6.0"),
-        .package(url: "https://github.com/soto-project/soto-core.git", 
+                 from: "6.0.0"),
+        .package(url: "https://github.com/soto-project/soto-core.git",
                  from: "6.4.0"),
+        .package(url: "https://github.com/giginet/scipio-cache-storage.git",
+                 from: "1.0.0"),
     ],
     targets: [
         .target(
             name: "ScipioS3Storage",
             dependencies: [
-                .product(name: "ScipioKit", package: "Scipio"),
+                .product(name: "ScipioStorage", package: "scipio-cache-storage"),
                 .product(name: "SotoCore", package: "soto-core"),
+            ],
+            swiftSettings: [
+                .enableExperimentalFeature("StrictConcurrency"),
             ],
             plugins: [
                 .plugin(name: "SotoCodeGeneratorPlugin", package: "soto-codegenerator"),

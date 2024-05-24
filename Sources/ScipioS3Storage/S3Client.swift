@@ -1,7 +1,7 @@
 import Foundation
 import SotoCore
 
-protocol ObjectStorageClient {
+protocol ObjectStorageClient: Sendable {
     init(storageConfig: S3StorageConfig) throws
 
     func putObject(_ data: Data, at key: String) async throws
@@ -9,7 +9,7 @@ protocol ObjectStorageClient {
     func fetchObject(at key: String) async throws -> Data
 }
 
-class APIObjectStorageClient: ObjectStorageClient {
+actor APIObjectStorageClient: ObjectStorageClient {
     private let awsClient: AWSClient
     private let client: S3
     private let storageConfig: S3StorageConfig
@@ -25,7 +25,7 @@ class APIObjectStorageClient: ObjectStorageClient {
         }
     }
 
-    required init(storageConfig: S3StorageConfig) throws {
+    init(storageConfig: S3StorageConfig) throws {
         switch storageConfig.authenticationMode {
         case .authorized(let accessKeyID, let secretAccessKey):
             awsClient = AWSClient(
