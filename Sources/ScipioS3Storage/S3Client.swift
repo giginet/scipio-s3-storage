@@ -61,12 +61,10 @@ actor APIObjectStorageClient: ObjectStorageClient {
         )
         do {
             _ = try await client.headObject(headObjectRequest)
+            return true
         } catch let error as S3ErrorType where error == .notFound {
             return false
-        } catch {
-            throw error
         }
-        return true
     }
 
     func fetchObject(at key: String) async throws -> Data {

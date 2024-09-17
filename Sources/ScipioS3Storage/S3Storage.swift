@@ -28,7 +28,15 @@ public struct AuthorizedConfiguration: Sendable {
 
     /// A secret access key
     public var secretAccessKey: String
-
+    
+    /// Makes a configuration.
+    /// - Parameters:
+    ///   - bucket: A bucket name
+    ///   - region: A region of the S3 bucket
+    ///   - endpoint: An endpoint to the S3. When `nil` is passed, the url is guessed according to the given region.
+    ///   - shouldPublishObject: A boolean value indicating an object should be published or not when it's put.
+    ///   - accessKeyID: An access key.
+    ///   - secretAccessKey: A secret access key
     public init(
         bucket: String,
         region: String,
@@ -61,11 +69,7 @@ public actor S3Storage: CacheStorage {
 
     public func existsValidCache(for cacheKey: some CacheKey) async throws -> Bool {
         let objectStorageKey = try constructObjectStorageKey(from: cacheKey)
-        do {
-            return try await storageClient.isExistObject(at: objectStorageKey)
-        } catch {
-            throw error
-        }
+        return try await storageClient.isExistObject(at: objectStorageKey)
     }
 
     public func fetchArtifacts(for cacheKey: some CacheKey, to destinationDir: URL) async throws {
