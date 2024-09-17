@@ -1,39 +1,48 @@
 import Foundation
 import ScipioStorage
 
-public struct S3StorageConfig: Sendable {
+public enum S3StorageConfig: Sendable {
+    /// A configuration which requires authentication.
+    case authorized(AuthorizedConfiguration)
+
+    /// A configuration for a public storage.
+    case publicURL(endpoint: URL, bucket: String)
+}
+
+public struct AuthorizedConfiguration: Sendable {
+    /// A bucket name
     public var bucket: String
+
+    /// A region of the S3 bucket
     public var region: String
-    public var endpoint: URL
-    public var authenticationMode: AuthenticationMode
+
+    /// An endpoint to the S3.
+    /// When `nil` is passed, the url is guessed according to the given region.
+    public var endpoint: URL?
+
+    /// A boolean value indicating an object should be published or not when it's put.
     public var shouldPublishObject: Bool
 
+    /// An access key.
+    public var accessKeyID: String
+
+    /// A secret access key
+    public var secretAccessKey: String
+
     public init(
-        authenticationMode: AuthenticationMode,
         bucket: String,
         region: String,
-        endpoint: URL,
-        shouldPublishObject: Bool = false
+        endpoint: URL?,
+        shouldPublishObject: Bool,
+        accessKeyID: String,
+        secretAccessKey: String
     ) {
-        self.authenticationMode = authenticationMode
-        self.bucket = bucket
         self.region = region
+        self.bucket = bucket
         self.endpoint = endpoint
         self.shouldPublishObject = shouldPublishObject
-    }
-
-    public enum AuthenticationMode: Sendable {
-        case usePublicURL
-        case authorized(accessKeyID: String, secretAccessKey: String)
-    }
-
-    fileprivate var objectStorageClientType: any ObjectStorageClient.Type {
-        switch authenticationMode {
-        case .usePublicURL:
-            return PublicURLObjectStorageClient.self
-        case .authorized:
-            return APIObjectStorageClient.self
-        }
+        self.accessKeyID = accessKeyID
+        self.secretAccessKey = secretAccessKey
     }
 }
 
@@ -43,7 +52,10 @@ public actor S3Storage: CacheStorage {
     private let compressor = Compressor()
 
     public init(config: S3StorageConfig, storagePrefix: String? = nil) throws {
-        self.storageClient = try config.objectStorageClientType.init(storageConfig: config)
+        self.storageClient = switch config {
+        case .publicURL(let endpoint, let bucket): PublicURLObjectStorageClient(endpoint: endpoint, bucket: bucket)
+        case .authorized(let authorizedConfiguration): APIObjectStorageClient(authorizedConfiguration)
+        }
         self.storagePrefix = storagePrefix
     }
 
