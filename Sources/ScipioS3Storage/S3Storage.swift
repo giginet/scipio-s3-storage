@@ -17,8 +17,7 @@ public struct AuthorizedConfiguration: Sendable {
     public var region: String
 
     /// An endpoint to the S3.
-    /// When `nil` is passed, the url is guessed according to the given region.
-    public var endpoint: URL?
+    public var endpoint: Endpoint
 
     /// A boolean value indicating an object should be published or not when it's put.
     public var shouldPublishObject: Bool
@@ -33,15 +32,15 @@ public struct AuthorizedConfiguration: Sendable {
     /// - Parameters:
     ///   - bucket: A bucket name
     ///   - region: A region of the S3 bucket
-    ///   - endpoint: An endpoint to the S3. When `nil` is passed, the url is guessed according to the given region.
+    ///   - endpoint: An endpoint to the S3.
     ///   - shouldPublishObject: A boolean value indicating an object should be published or not when it's put.
     ///   - accessKeyID: An access key.
     ///   - secretAccessKey: A secret access key
     public init(
         bucket: String,
         region: String,
-        endpoint: URL?,
-        shouldPublishObject: Bool,
+        endpoint: Endpoint = .awsDefault,
+        shouldPublishObject: Bool = false,
         accessKeyID: String,
         secretAccessKey: String
     ) {
@@ -51,6 +50,16 @@ public struct AuthorizedConfiguration: Sendable {
         self.shouldPublishObject = shouldPublishObject
         self.accessKeyID = accessKeyID
         self.secretAccessKey = secretAccessKey
+    }
+}
+
+extension AuthorizedConfiguration {
+    public enum Endpoint: Sendable {
+        /// A case indicating default URL of AWS. The url is guessed according to the given region.
+        case awsDefault
+
+        /// A case indicating custom URL.
+        case custom(URL)
     }
 }
 

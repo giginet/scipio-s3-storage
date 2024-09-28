@@ -31,10 +31,14 @@ actor APIObjectStorageClient: ObjectStorageClient {
             ),
             httpClientProvider: .createNew
         )
+        let endpointURL: URL? = switch config.endpoint {
+        case .awsDefault: nil
+        case .custom(let url): url
+        }
         self.client = S3(
             client: awsClient,
             region: .init(awsRegionName: config.region),
-            endpoint: config.endpoint?.absoluteString
+            endpoint: endpointURL?.absoluteString
         )
         self.config = config
     }
