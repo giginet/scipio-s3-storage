@@ -116,7 +116,7 @@ struct PublicURLObjectStorageClient: ObjectStorageClient {
     }
 
     func isExistObject(at key: String) async throws -> Bool {
-        let url = try constructPublicURL(of: key)
+        let url = constructPublicURL(of: key)
         let request = {
             var request = URLRequest(url: url)
             request.httpMethod = "HEAD"
@@ -131,7 +131,7 @@ struct PublicURLObjectStorageClient: ObjectStorageClient {
     }
 
     func fetchObject(at key: String) async throws -> Data {
-        let url = try constructPublicURL(of: key)
+        let url = constructPublicURL(of: key)
         let request = URLRequest(url: url)
         let (data, httpResponse) = try await httpClient.data(for: request)
 
@@ -142,7 +142,7 @@ struct PublicURLObjectStorageClient: ObjectStorageClient {
         return data
     }
 
-    private func constructPublicURL(of key: String) throws -> URL {
+    private func constructPublicURL(of key: String) -> URL {
         endpoint.appendingPathComponent(bucket)
             .appendingPathComponent(key)
     }
