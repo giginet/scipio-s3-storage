@@ -40,7 +40,7 @@ final class CompressorTests: XCTestCase {
     }
 
     override func tearDown() {
-        super.setUp()
+        super.tearDown()
 
         try? self.fileManager.removeItem(at: self.workspacePath)
     }
