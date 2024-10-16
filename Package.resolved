@@ -32,7 +32,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/giginet/scipio-cache-storage.git",
       "state" : {
-        "revision" : "ec3467983ae14356ffcba0ecf4e5c76c3dd80532"
+        "revision" : "a7b01bbf02dea506af7d8f7a13f6e985044d5d57",
+        "version" : "1.0.0"
       }
     },
     {

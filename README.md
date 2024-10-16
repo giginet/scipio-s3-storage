@@ -13,18 +13,15 @@ import ScipioKit
 import ScipioS3Storage
 
 // Define S3 Storage settings
-let config = S3StorageConfig(
-    authenticationMode: .authorized(
-        accessKeyID: "AWS_ACCESS_KEY_ID", 
-        secretAccessKey: "AWS_SECRET_ACCESS_KEY"
-    ),
+let config = AuthorizedConfiguration(
     bucket: "my-bucket",
     region: "ap-northeast-1",
-    endpoint: URL(string: "https://my-s3-bucket.com")!
+    accessKeyID: "AWS_ACCESS_KEY_ID",
+    secretAccessKey: "AWS_SECRET_ACCESS_KEY"
 )
 
 // Instantiate S3Storage
-let s3Storage = try S3Storage(config: config)
+let s3Storage = try S3Storage(config: .authorized(config))
 
 // Define Scipio Runner options
 let options = Runner.Options(

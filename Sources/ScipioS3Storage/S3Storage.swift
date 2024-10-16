@@ -1,39 +1,65 @@
 import Foundation
 import ScipioStorage
 
-public struct S3StorageConfig: Sendable {
+public enum S3StorageConfig: Sendable {
+    /// A configuration which requires authentication.
+    case authorized(AuthorizedConfiguration)
+
+    /// A configuration for a public storage.
+    case publicURL(endpoint: URL, bucket: String)
+}
+
+public struct AuthorizedConfiguration: Sendable {
+    /// A bucket name
     public var bucket: String
+
+    /// A region of the S3 bucket
     public var region: String
-    public var endpoint: URL
-    public var authenticationMode: AuthenticationMode
+
+    /// An endpoint to the S3.
+    public var endpoint: Endpoint
+
+    /// A boolean value indicating an object should be published or not when it's put.
     public var shouldPublishObject: Bool
 
+    /// An access key.
+    public var accessKeyID: String
+
+    /// A secret access key
+    public var secretAccessKey: String
+
+    /// Makes a configuration.
+    /// - Parameters:
+    ///   - bucket: A bucket name
+    ///   - region: A region of the S3 bucket
+    ///   - endpoint: An endpoint to the S3.
+    ///   - shouldPublishObject: A boolean value indicating an object should be published or not when it's put.
+    ///   - accessKeyID: An access key.
+    ///   - secretAccessKey: A secret access key
     public init(
-        authenticationMode: AuthenticationMode,
         bucket: String,
         region: String,
-        endpoint: URL,
-        shouldPublishObject: Bool = false
+        endpoint: Endpoint = .awsDefault,
+        shouldPublishObject: Bool = false,
+        accessKeyID: String,
+        secretAccessKey: String
     ) {
-        self.authenticationMode = authenticationMode
-        self.bucket = bucket
         self.region = region
+        self.bucket = bucket
         self.endpoint = endpoint
         self.shouldPublishObject = shouldPublishObject
+        self.accessKeyID = accessKeyID
+        self.secretAccessKey = secretAccessKey
     }
+}
 
-    public enum AuthenticationMode: Sendable {
-        case usePublicURL
-        case authorized(accessKeyID: String, secretAccessKey: String)
-    }
+extension AuthorizedConfiguration {
+    public enum Endpoint: Sendable {
+        /// A case indicating default URL of AWS. The url is guessed according to the given region.
+        case awsDefault
 
-    fileprivate var objectStorageClientType: any ObjectStorageClient.Type {
-        switch authenticationMode {
-        case .usePublicURL:
-            return PublicURLObjectStorageClient.self
-        case .authorized:
-            return APIObjectStorageClient.self
-        }
+        /// A case indicating custom URL.
+        case custom(URL)
     }
 }
 
@@ -43,17 +69,16 @@ public actor S3Storage: CacheStorage {
     private let compressor = Compressor()
 
     public init(config: S3StorageConfig, storagePrefix: String? = nil) throws {
-        self.storageClient = try config.objectStorageClientType.init(storageConfig: config)
+        self.storageClient = switch config {
+        case .publicURL(let endpoint, let bucket): PublicURLObjectStorageClient(endpoint: endpoint, bucket: bucket)
+        case .authorized(let authorizedConfiguration): APIObjectStorageClient(authorizedConfiguration)
+        }
         self.storagePrefix = storagePrefix
     }
 
     public func existsValidCache(for cacheKey: some CacheKey) async throws -> Bool {
         let objectStorageKey = try constructObjectStorageKey(from: cacheKey)
-        do {
-            return try await storageClient.isExistObject(at: objectStorageKey)
-        } catch {
-            throw error
-        }
+        return try await storageClient.isExistObject(at: objectStorageKey)
     }
 
     public func fetchArtifacts(for cacheKey: some CacheKey, to destinationDir: URL) async throws {

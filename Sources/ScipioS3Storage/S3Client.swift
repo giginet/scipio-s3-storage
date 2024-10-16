@@ -2,8 +2,6 @@ import Foundation
 import SotoCore
 
 protocol ObjectStorageClient: Sendable {
-    init(storageConfig: S3StorageConfig) throws
-
     func putObject(_ data: Data, at key: String) async throws
     func isExistObject(at key: String) async throws -> Bool
     func fetchObject(at key: String) async throws -> Data
@@ -12,7 +10,7 @@ protocol ObjectStorageClient: Sendable {
 actor APIObjectStorageClient: ObjectStorageClient {
     private let awsClient: AWSClient
     private let client: S3
-    private let storageConfig: S3StorageConfig
+    private let config: AuthorizedConfiguration
 
     enum Error: LocalizedError {
         case emptyObject
@@ -25,23 +23,24 @@ actor APIObjectStorageClient: ObjectStorageClient {
         }
     }
 
-    init(storageConfig: S3StorageConfig) throws {
-        switch storageConfig.authenticationMode {
-        case .authorized(let accessKeyID, let secretAccessKey):
-            awsClient = AWSClient(
-                credentialProvider:
-                    .static(accessKeyId: accessKeyID, secretAccessKey: secretAccessKey),
-                httpClientProvider: .createNew
-            )
-            client = S3(
-                client: awsClient,
-                region: .init(awsRegionName: storageConfig.region),
-                endpoint: storageConfig.endpoint.absoluteString
-            )
-        case .usePublicURL:
-            fatalError("Invalid authorizationMode")
+    init(_ config: AuthorizedConfiguration) {
+        self.awsClient = AWSClient(
+            credentialProvider: .static(
+                accessKeyId: config.accessKeyID,
+                secretAccessKey: config.secretAccessKey
+            ),
+            httpClientProvider: .createNew
+        )
+        let endpointURL: URL? = switch config.endpoint {
+        case .awsDefault: nil
+        case .custom(let url): url
         }
-        self.storageConfig = storageConfig
+        self.client = S3(
+            client: awsClient,
+            region: .init(awsRegionName: config.region),
+            endpoint: endpointURL?.absoluteString
+        )
+        self.config = config
     }
 
     deinit {
@@ -49,11 +48,11 @@ actor APIObjectStorageClient: ObjectStorageClient {
     }
 
     func putObject(_ data: Data, at key: String) async throws {
-        let acl: S3.ObjectCannedACL = storageConfig.shouldPublishObject ? .publicRead : .authenticatedRead
+        let acl: S3.ObjectCannedACL = config.shouldPublishObject ? .publicRead : .authenticatedRead
         let putObjectRequest = S3.PutObjectRequest(
             acl: acl,
             body: .byteBuffer(ByteBuffer(data: data)),
-            bucket: storageConfig.bucket,
+            bucket: config.bucket,
             key: key
         )
         _ = try await client.putObject(putObjectRequest)
@@ -61,22 +60,20 @@ actor APIObjectStorageClient: ObjectStorageClient {
 
     func isExistObject(at key: String) async throws -> Bool {
         let headObjectRequest = S3.HeadObjectRequest(
-            bucket: storageConfig.bucket,
+            bucket: config.bucket,
             key: key
         )
         do {
             _ = try await client.headObject(headObjectRequest)
+            return true
         } catch let error as S3ErrorType where error == .notFound {
             return false
-        } catch {
-            throw error
         }
-        return true
     }
 
     func fetchObject(at key: String) async throws -> Data {
         let getObjectRequest = S3.GetObjectRequest(
-            bucket: storageConfig.bucket,
+            bucket: config.bucket,
             key: key
         )
         let response = try await client.getObject(getObjectRequest)
@@ -88,7 +85,8 @@ actor APIObjectStorageClient: ObjectStorageClient {
 }
 
 struct PublicURLObjectStorageClient: ObjectStorageClient {
-    private let storageConfig: S3StorageConfig
+    private let endpoint: URL
+    private let bucket: String
     private let httpClient: URLSession = .shared
 
     enum Error: LocalizedError {
@@ -108,8 +106,9 @@ struct PublicURLObjectStorageClient: ObjectStorageClient {
         }
     }
 
-    init(storageConfig: S3StorageConfig) throws {
-        self.storageConfig = storageConfig
+    init(endpoint: URL, bucket: String) {
+        self.endpoint = endpoint
+        self.bucket = bucket
     }
 
     func putObject(_ data: Data, at key: String) async throws {
@@ -144,8 +143,7 @@ struct PublicURLObjectStorageClient: ObjectStorageClient {
     }
 
     private func constructPublicURL(of key: String) -> URL {
-        storageConfig.endpoint
-            .appendingPathComponent(storageConfig.bucket)
+        endpoint.appendingPathComponent(bucket)
             .appendingPathComponent(key)
     }
 }
