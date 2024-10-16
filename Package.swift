@@ -1,4 +1,4 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.0
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -28,9 +28,6 @@ let package = Package(
                 .product(name: "ScipioStorage", package: "scipio-cache-storage"),
                 .product(name: "SotoCore", package: "soto-core"),
             ],
-            swiftSettings: [
-                .enableExperimentalFeature("StrictConcurrency"),
-            ],
             plugins: [
                 .plugin(name: "SotoCodeGeneratorPlugin", package: "soto-codegenerator"),
             ]
@@ -38,5 +35,6 @@ let package = Package(
         .testTarget(
             name: "ScipioS3StorageTests",
             dependencies: ["ScipioS3Storage"]),
-    ]
+    ],
+    swiftLanguageModes: [.v6]
 )

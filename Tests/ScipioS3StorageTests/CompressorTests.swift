@@ -1,6 +1,7 @@
 import XCTest
 @testable import ScipioS3Storage
 
+@MainActor
 final class CompressorTests: XCTestCase {
     private let fileManager = FileManager.default
     private var workspacePath: URL!
