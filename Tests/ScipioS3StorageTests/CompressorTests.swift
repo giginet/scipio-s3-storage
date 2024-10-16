@@ -38,7 +38,7 @@ final class CompressorTests: XCTestCase {
             fileManager.contents(atPath: extractedPath.appendingPathComponent(fileName).path)
         )
         XCTAssertEqual(
-            String(decoding: fileContents, as: UTF8.self),
+            String(bytes: fileContents, encoding: .utf8),
             fileBody
         )
 
