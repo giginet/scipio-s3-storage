@@ -28,8 +28,7 @@ actor APIObjectStorageClient: ObjectStorageClient {
             credentialProvider: .static(
                 accessKeyId: config.accessKeyID,
                 secretAccessKey: config.secretAccessKey
-            ),
-            httpClientProvider: .createNew
+            )
         )
         let endpointURL: URL? = switch config.endpoint {
         case .awsDefault: nil
@@ -51,7 +50,7 @@ actor APIObjectStorageClient: ObjectStorageClient {
         let acl: S3.ObjectCannedACL = config.shouldPublishObject ? .publicRead : .authenticatedRead
         let putObjectRequest = S3.PutObjectRequest(
             acl: acl,
-            body: .byteBuffer(ByteBuffer(data: data)),
+            body: AWSHTTPBody(bytes: data),
             bucket: config.bucket,
             key: key
         )
@@ -77,7 +76,9 @@ actor APIObjectStorageClient: ObjectStorageClient {
             key: key
         )
         let response = try await client.getObject(getObjectRequest)
-        guard let data = response.body?.asData() else {
+        let byteBuffer = try await response.body.collect(upTo: .max)
+        let data = Data(buffer: byteBuffer)
+        guard !data.isEmpty else {
             throw Error.emptyObject
         }
         return data
