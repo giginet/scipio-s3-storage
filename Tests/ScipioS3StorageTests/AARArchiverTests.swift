@@ -34,7 +34,7 @@ final class AARArchiverTests: XCTestCase {
             fileManager.contents(atPath: extractedPath.appendingPathComponent(fileName).path)
         )
         XCTAssertEqual(
-            String(data: fileContents, encoding: .utf8),
+            String(decoding: fileContents, as: UTF8.self),
             fileBody
         )
     }

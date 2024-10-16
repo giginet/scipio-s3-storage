@@ -27,7 +27,7 @@ public struct AuthorizedConfiguration: Sendable {
 
     /// A secret access key
     public var secretAccessKey: String
-    
+
     /// Makes a configuration.
     /// - Parameters:
     ///   - bucket: A bucket name
