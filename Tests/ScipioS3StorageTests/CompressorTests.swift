@@ -9,10 +9,6 @@ final class CompressorTests: XCTestCase {
         workspacePath = fileManager.temporaryDirectory.appendingPathComponent("org.giginet.ScipioS3StorageTests")
 
         try fileManager.createDirectory(at: workspacePath, withIntermediateDirectories: true)
-
-        addTeardownBlock {
-            try? self.fileManager.removeItem(at: self.workspacePath)
-        }
     }
 
     func testRoundTrips() throws {
@@ -41,9 +37,11 @@ final class CompressorTests: XCTestCase {
             String(bytes: fileContents, encoding: .utf8),
             fileBody
         )
+    }
 
-        addTeardownBlock {
-            try? self.fileManager.removeItem(at: xcframeworkPath)
-        }
+    override func tearDown() {
+        super.tearDown()
+
+        try? self.fileManager.removeItem(at: self.workspacePath)
     }
 }
