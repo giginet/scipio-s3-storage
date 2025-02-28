@@ -17,7 +17,7 @@ let package = Package(
         .package(url: "https://github.com/soto-project/soto-codegenerator", 
                  from: "7.1.0"),
         .package(url: "https://github.com/soto-project/soto-core.git",
-                 from: "7.1.0"),
+                 from: "7.3.2"),
         .package(url: "https://github.com/giginet/scipio-cache-storage.git",
                  from: "1.0.0"),
     ],
