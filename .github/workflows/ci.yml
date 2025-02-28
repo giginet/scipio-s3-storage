@@ -9,11 +9,17 @@ on:
       - '*'
 jobs:
   Tests:
-    runs-on: macos-14
+    strategy:
+      matrix:
+        xcode_version:
+          - "16.2" # 6.0
+          # Comment out this once it's available
+          # - "16.3" # 6.1
+    env: 
+      DEVELOPER_DIR: "/Applications/Xcode_${{ matrix.xcode_version }}.app/Contents/Developer"
+    runs-on: macos-15
     steps:
-    - uses: actions/checkout@v2
-    - name: Select Xcode version
-      run: sudo xcode-select -s '/Applications/Xcode_16.0.app/Contents/Developer'
+    - uses: actions/checkout@v4
     - name: Install SwiftLint
       run: brew install swiftlint
     - name: SwiftLint
