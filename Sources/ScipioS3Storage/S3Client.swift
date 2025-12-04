@@ -1,5 +1,6 @@
 import Foundation
-import SotoCore
+@testable import SotoCore
+import AsyncHTTPClient
 
 protocol ObjectStorageClient: Sendable {
     func putObject(_ data: Data, at key: String) async throws
@@ -37,7 +38,8 @@ actor APIObjectStorageClient: ObjectStorageClient {
         self.client = S3(
             client: awsClient,
             region: .init(awsRegionName: config.region),
-            endpoint: endpointURL?.absoluteString
+            endpoint: endpointURL?.absoluteString,
+            timeout: .minutes(1)
         )
         self.config = config
     }
