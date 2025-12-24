@@ -19,7 +19,7 @@ let package = Package(
         .package(url: "https://github.com/soto-project/soto-core.git",
                  from: "7.3.2"),
         .package(url: "https://github.com/giginet/Scipio.git",
-                 branch: "main"),
+                 from: "0.32.0"),
     ],
     targets: [
         .target(
