@@ -1,5 +1,5 @@
 import Foundation
-import ScipioStorage
+import CacheStorage
 
 public enum S3StorageConfig: Sendable {
     /// A configuration which requires authentication.
@@ -63,7 +63,7 @@ extension AuthorizedConfiguration {
     }
 }
 
-public actor S3Storage: CacheStorage {
+public actor S3Storage: FrameworkCacheStorage {
     private let storagePrefix: String?
     private let storageClient: any ObjectStorageClient
     private let compressor = Compressor()

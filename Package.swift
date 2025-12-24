@@ -18,14 +18,14 @@ let package = Package(
                  from: "7.1.0"),
         .package(url: "https://github.com/soto-project/soto-core.git",
                  from: "7.3.2"),
-        .package(url: "https://github.com/giginet/scipio-cache-storage.git",
-                 from: "1.0.0"),
+        .package(url: "https://github.com/giginet/Scipio.git",
+                 from: "0.32.0"),
     ],
     targets: [
         .target(
             name: "ScipioS3Storage",
             dependencies: [
-                .product(name: "ScipioStorage", package: "scipio-cache-storage"),
+                .product(name: "ScipioCacheStorage", package: "Scipio"),
                 .product(name: "SotoCore", package: "soto-core"),
             ],
             plugins: [
