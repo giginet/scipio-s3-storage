@@ -23,7 +23,7 @@ actor APIObjectStorageClient: ObjectStorageClient {
         }
     }
 
-    init(_ config: AuthorizedConfiguration) {
+    init(_ config: AuthorizedConfiguration, timeout: TimeAmount?) {
         self.awsClient = AWSClient(
             credentialProvider: .static(
                 accessKeyId: config.accessKeyID,
@@ -37,7 +37,8 @@ actor APIObjectStorageClient: ObjectStorageClient {
         self.client = S3(
             client: awsClient,
             region: .init(awsRegionName: config.region),
-            endpoint: endpointURL?.absoluteString
+            endpoint: endpointURL?.absoluteString,
+            timeout: timeout
         )
         self.config = config
     }
@@ -88,7 +89,7 @@ actor APIObjectStorageClient: ObjectStorageClient {
 struct PublicURLObjectStorageClient: ObjectStorageClient {
     private let endpoint: URL
     private let bucket: String
-    private let httpClient: URLSession = .shared
+    private let httpClient: URLSession
 
     enum Error: LocalizedError {
         case putObjectIsNotSupported
@@ -107,9 +108,15 @@ struct PublicURLObjectStorageClient: ObjectStorageClient {
         }
     }
 
-    init(endpoint: URL, bucket: String) {
+    init(endpoint: URL, bucket: String, timeout: TimeAmount?) {
+        let configuration = URLSessionConfiguration.default
+        if let timeout {
+            configuration.timeoutIntervalForRequest = Double(timeout.nanoseconds) / 1_000_000_000
+        }
+
         self.endpoint = endpoint
         self.bucket = bucket
+        self.httpClient = URLSession(configuration: configuration)
     }
 
     func putObject(_ data: Data, at key: String) async throws {
