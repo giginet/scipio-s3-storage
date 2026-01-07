@@ -1,6 +1,5 @@
 import Foundation
 import SotoCore
-import AsyncHTTPClient
 
 protocol ObjectStorageClient: Sendable {
     func putObject(_ data: Data, at key: String) async throws
