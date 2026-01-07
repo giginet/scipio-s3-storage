@@ -14,8 +14,10 @@ public actor S3FrameworkStorage: FrameworkCacheStorage {
         timeout: TimeAmount? = nil
     ) throws {
         self.storageClient = switch config {
-        case .publicURL(let endpoint, let bucket): PublicURLObjectStorageClient(endpoint: endpoint, bucket: bucket, timeout: timeout)
-        case .authorized(let authorizedConfiguration): APIObjectStorageClient(authorizedConfiguration, timeout: timeout)
+        case .publicURL(let endpoint, let bucket):
+            PublicURLObjectStorageClient(endpoint: endpoint, bucket: bucket, timeout: timeout)
+        case .authorized(let authorizedConfiguration):
+            APIObjectStorageClient(authorizedConfiguration, timeout: timeout)
         }
         self.storagePrefix = storagePrefix
     }

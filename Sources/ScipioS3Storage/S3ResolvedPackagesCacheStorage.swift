@@ -16,8 +16,10 @@ public actor S3ResolvedPackagesStorage: ResolvedPackagesCacheStorage {
     ) throws {
         self.storagePrefix = storagePrefix
         self.storageClient = switch config {
-        case .publicURL(let endpoint, let bucket): PublicURLObjectStorageClient(endpoint: endpoint, bucket: bucket, timeout: timeout)
-        case .authorized(let authorizedConfiguration): APIObjectStorageClient(authorizedConfiguration, timeout: timeout)
+        case .publicURL(let endpoint, let bucket):
+            PublicURLObjectStorageClient(endpoint: endpoint, bucket: bucket, timeout: timeout)
+        case .authorized(let authorizedConfiguration):
+            APIObjectStorageClient(authorizedConfiguration, timeout: timeout)
         }
     }
 
