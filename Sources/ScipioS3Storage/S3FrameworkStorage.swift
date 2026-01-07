@@ -1,5 +1,6 @@
 import Foundation
 import CacheStorage
+import SotoCore
 import struct UniformTypeIdentifiers.UTType
 
 public actor S3FrameworkStorage: FrameworkCacheStorage {
@@ -7,10 +8,14 @@ public actor S3FrameworkStorage: FrameworkCacheStorage {
     private let storageClient: any ObjectStorageClient
     private let compressor = Compressor()
 
-    public init(config: S3StorageConfig, storagePrefix: String? = nil) throws {
+    public init(
+        config: S3StorageConfig,
+        storagePrefix: String? = nil,
+        timeout: TimeAmount? = nil
+    ) throws {
         self.storageClient = switch config {
-        case .publicURL(let endpoint, let bucket): PublicURLObjectStorageClient(endpoint: endpoint, bucket: bucket)
-        case .authorized(let authorizedConfiguration): APIObjectStorageClient(authorizedConfiguration)
+        case .publicURL(let endpoint, let bucket): PublicURLObjectStorageClient(endpoint: endpoint, bucket: bucket, timeout: timeout)
+        case .authorized(let authorizedConfiguration): APIObjectStorageClient(authorizedConfiguration, timeout: timeout)
         }
         self.storagePrefix = storagePrefix
     }

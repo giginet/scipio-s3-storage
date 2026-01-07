@@ -1,17 +1,23 @@
 import Foundation
 import CacheStorage
 
-public actor S3ResolvedPackagesCacheStorage: ResolvedPackagesCacheStorage {
+public actor S3ResolvedPackagesStorage: ResolvedPackagesCacheStorage {
     private let jsonDecoder = JSONDecoder()
     private let jsonEncoder = JSONEncoder()
 
     private let storageClient: any ObjectStorageClient
     private let fileManager: FileManager = .default
+    private let storagePrefix: String?
 
-    public init(config: S3StorageConfig) throws {
+    public init(
+        config: S3StorageConfig,
+        storagePrefix: String? = nil,
+        timeout: TimeAmount? = nil
+    ) throws {
+        self.storagePrefix = storagePrefix
         self.storageClient = switch config {
-        case .publicURL(let endpoint, let bucket): PublicURLObjectStorageClient(endpoint: endpoint, bucket: bucket)
-        case .authorized(let authorizedConfiguration): APIObjectStorageClient(authorizedConfiguration)
+        case .publicURL(let endpoint, let bucket): PublicURLObjectStorageClient(endpoint: endpoint, bucket: bucket, timeout: timeout)
+        case .authorized(let authorizedConfiguration): APIObjectStorageClient(authorizedConfiguration, timeout: timeout)
         }
     }
 
@@ -33,6 +39,6 @@ public actor S3ResolvedPackagesCacheStorage: ResolvedPackagesCacheStorage {
     }
 
     private func constructObjectStorageKey(from originHash: String) -> String {
-        "ResolvedPackages_\(originHash)"
+        [storagePrefix, originHash].compactMap { $0 }.joined()
     }
 }
