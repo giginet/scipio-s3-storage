@@ -1,5 +1,5 @@
 {
-  "originHash" : "521356fc8a78be38a15ac1f712ac3730637edc0fc85326eaf8bfba024f3b586e",
+  "originHash" : "3c0f1cd2560ba7e9dcdcb5bd161afd0e9ab1720cf17dad50621d961d36b53b59",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -42,7 +42,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/giginet/Scipio.git",
       "state" : {
-        "revision" : "e2bbcc88784cd6ce319a6ecc17151d632009dcc2"
+        "revision" : "52674ce5d710de66a31de905a3ccc1ed10acd918"
       }
     },
     {

@@ -8,6 +8,7 @@ struct S3ArtifactCacheTests {
     private struct TestCacheKey: CacheKey {
         let targetName: String
         let revision: String
+        var artifactKind: ArtifactKind?
     }
 
     @Test func `macro and framework round trips use separate keys`() async throws {
@@ -22,23 +23,28 @@ struct S3ArtifactCacheTests {
 
         let client = MemoryObjectStorage()
         let storage = S3Storage(storageClient: client, storagePrefix: "prefix")
-        let key = TestCacheKey(targetName: "ExamplePlugin", revision: "one")
+        let frameworkKey = TestCacheKey(targetName: "ExamplePlugin", revision: "one")
+        let key = TestCacheKey(targetName: "ExamplePlugin", revision: "one", artifactKind: .macroPlugin)
+        let frameworkChecksum = try frameworkKey.calculateChecksum()
         let checksum = try key.calculateChecksum()
+        #expect(checksum != frameworkChecksum)
         let missing = try await storage.existsArtifact(for: key, kind: .macroPlugin)
         #expect(!missing)
 
-        try await storage.cacheFramework(framework, for: key)
+        try await storage.cacheFramework(framework, for: frameworkKey)
         try await storage.cacheArtifact(artifact, for: key, kind: .macroPlugin)
 
         let keys = await client.keys()
-        #expect(keys == ["prefix/ExamplePlugin/\(checksum).aar", "prefix/Macros/ExamplePlugin/\(checksum).aar"])
+        #expect(keys == [
+            "prefix/ExamplePlugin/\(frameworkChecksum).aar", "prefix/ExamplePlugin/\(checksum).aar"
+        ])
         let exists = try await storage.existsArtifact(for: key, kind: .macroPlugin)
         #expect(exists)
 
         let restoredArtifact = root.appending(path: "restored-plugin")
         let restoredFrameworkRoot = root.appending(path: "restored-framework")
         try await storage.fetchArtifact(for: key, kind: .macroPlugin, to: restoredArtifact)
-        try await storage.fetchArtifacts(for: key, to: restoredFrameworkRoot)
+        try await storage.fetchArtifacts(for: frameworkKey, to: restoredFrameworkRoot)
 
         let restoredExecutable = restoredArtifact.appending(path: "ExamplePlugin")
         #expect(try Data(contentsOf: restoredExecutable) == payload)
@@ -85,7 +91,7 @@ struct S3ArtifactCacheTests {
         let storage = S3Storage(storageClient: client)
         let otherConsumer = S3Storage(storageClient: client)
         let key = TestCacheKey(targetName: "ExamplePlugin", revision: "one")
-        let objectKey = try "Macros/ExamplePlugin/\(key.calculateChecksum()).aar"
+        let objectKey = try "ExamplePlugin/\(key.calculateChecksum()).aar"
         try await client.putObject(Data("corrupt".utf8), at: objectKey)
 
         try await storage.removeArtifact(for: key, kind: .macroPlugin)
@@ -110,7 +116,7 @@ struct S3ArtifactCacheTests {
         let client = MemoryObjectStorage()
         let storage = S3Storage(storageClient: client)
         let key = TestCacheKey(targetName: "ExamplePlugin", revision: "one")
-        let objectKey = try "Macros/ExamplePlugin/\(key.calculateChecksum()).aar"
+        let objectKey = try "ExamplePlugin/\(key.calculateChecksum()).aar"
         try await client.putObject(Data("corrupt archive".utf8), at: objectKey)
 
         await #expect(throws: (any Error).self) {
@@ -139,19 +145,19 @@ struct S3ArtifactCacheTests {
 
         try await runner.run(packageDirectory: package, frameworkOutputDir: .custom(output))
         let framework = output.appending(path: "FixtureLibrary.xcframework")
-        let macroDirectory = root.appending(components: "MacroPlugins", "FixturePlugin")
+        let macroDirectory = package.appending(components: ".build", "scipio", "MacroPlugins", "FixturePlugin")
         let executable = macroDirectory.appending(path: "FixturePlugin")
-        let macroVersion = root.appending(components: "MacroPlugins", ".FixturePlugin.version")
+        let macroVersion = package.appending(components: ".build", "scipio", "MacroPlugins", ".FixturePlugin.version")
         let original = try Data(contentsOf: executable)
         let objectKeys = await client.keys()
         #expect(objectKeys.contains { $0.hasPrefix("cache/FixtureLibrary/") })
-        #expect(objectKeys.contains { $0.hasPrefix("cache/Macros/FixturePlugin/") })
+        #expect(objectKeys.contains { $0.hasPrefix("cache/FixturePlugin/") })
 
         try manager.removeItem(at: macroDirectory)
         try manager.removeItem(at: macroVersion)
         try await runner.run(packageDirectory: package, frameworkOutputDir: .custom(output))
         let firstFetches = await client.fetched()
-        #expect(firstFetches.contains { $0.hasPrefix("cache/Macros/FixturePlugin/") })
+        #expect(firstFetches.contains { $0.hasPrefix("cache/FixturePlugin/") })
         #expect(!firstFetches.contains { $0.hasPrefix("cache/FixtureLibrary/") })
         #expect(try Data(contentsOf: executable) == original)
 

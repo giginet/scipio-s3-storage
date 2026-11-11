@@ -110,15 +110,15 @@ public actor S3Storage: FrameworkCacheStorage {
     }
 }
 
-extension S3Storage: ArtifactCacheStorage {
+extension S3Storage: MacroPluginsCacheStorage {
     public func existsArtifact(for cacheKey: some CacheKey, kind: ArtifactKind) async throws -> Bool {
-        let key = try constructArtifactKey(from: cacheKey, kind: kind)
+        let key = try constructObjectStorageKey(from: cacheKey)
         guard !invalidArtifactKeys.contains(key) else { return false }
         return try await storageClient.isExistObject(at: key)
     }
 
     public func fetchArtifact(for cacheKey: some CacheKey, kind: ArtifactKind, to destination: URL) async throws {
-        let key = try constructArtifactKey(from: cacheKey, kind: kind)
+        let key = try constructObjectStorageKey(from: cacheKey)
         let archive = try await storageClient.fetchObject(at: key)
         do {
             try compressor.extract(archive, to: destination)
@@ -129,7 +129,7 @@ extension S3Storage: ArtifactCacheStorage {
     }
 
     public func cacheArtifact(_ artifact: URL, for cacheKey: some CacheKey, kind: ArtifactKind) async throws {
-        let key = try constructArtifactKey(from: cacheKey, kind: kind)
+        let key = try constructObjectStorageKey(from: cacheKey)
         let data = try compressor.compress(artifact)
         try await storageClient.putObject(data, at: key)
         invalidArtifactKeys.remove(key)
@@ -137,16 +137,6 @@ extension S3Storage: ArtifactCacheStorage {
 
     public func removeArtifact(for cacheKey: some CacheKey, kind: ArtifactKind) async throws {
         // Consumers may lack delete permission; a producer can replace the invalid object.
-        try invalidArtifactKeys.insert(constructArtifactKey(from: cacheKey, kind: kind))
-    }
-
-    private func constructArtifactKey(from cacheKey: some CacheKey, kind: ArtifactKind) throws -> String {
-        let namespace = switch kind {
-        case .macroPlugin: "Macros"
-        }
-        let archiveName = try "\(cacheKey.calculateChecksum()).aar"
-        return [storagePrefix, namespace, cacheKey.targetName, archiveName]
-            .compactMap { $0 }
-            .joined(separator: "/")
+        try invalidArtifactKeys.insert(constructObjectStorageKey(from: cacheKey))
     }
 }

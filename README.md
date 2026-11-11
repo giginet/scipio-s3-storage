@@ -4,7 +4,7 @@
 
 ## Swift macro artifacts
 
-`S3Storage` can cache compiler plugin directories through Scipio's `ArtifactCacheStorage` interface. Macro artifacts use `<prefix>/Macros/<target>/<checksum>.aar`; existing XCFramework keys remain `<prefix>/<target>/<checksum>.aar`. The archive contains the executable and its support files, including executable permissions.
+`S3Storage` can cache compiler plugin directories through Scipio's `MacroPluginsCacheStorage` interface. Both macro artifacts and XCFrameworks use `<prefix>/<target>/<checksum>.aar`. The macro cache key includes its artifact kind, so macro and framework checksums remain distinct even for the same target name. Existing XCFramework keys are unchanged. The archive contains the executable and its support files, including executable permissions.
 
 Invalid artifacts are marked as unavailable by the storage instance without deleting the remote object. A producer can replace the object with a rebuilt artifact; other consumers may continue to encounter the invalid object until it is replaced. Public URL consumers remain read-only.
 
