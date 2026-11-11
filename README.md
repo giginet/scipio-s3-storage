@@ -2,6 +2,14 @@
 
 [Scipio](https://github.com/giginet/Scipio) cache storage backend for AWS S3.
 
+## Swift macro artifacts
+
+`S3Storage` can cache compiler plugin directories through Scipio's `ArtifactCacheStorage` interface. Macro artifacts use `<prefix>/Macros/<target>/<checksum>.aar`; existing XCFramework keys remain `<prefix>/<target>/<checksum>.aar`. The archive contains the executable and its support files, including executable permissions.
+
+Invalid artifacts are marked as unavailable by the storage instance without deleting the remote object. A producer can replace the object with a rebuilt artifact; other consumers may continue to encounter the invalid object until it is replaced. Public URL consumers remain read-only.
+
+This prototype depends on a fixed revision of [Scipio's macro support PR](https://github.com/giginet/Scipio/pull/288). Replace the revision with a released Scipio version before publishing a versioned release of this package.
+
 ## Usage
 
 `scipio` CLI doesn't provide a way to set custom cache storage backend.

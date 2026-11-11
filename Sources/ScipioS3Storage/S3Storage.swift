@@ -63,16 +63,22 @@ extension AuthorizedConfiguration {
     }
 }
 
-public actor S3Storage: FrameworkCacheStorage {
+public actor S3Storage: FrameworkCacheStorage, ArtifactCacheStorage {
     private let storagePrefix: String?
     private let storageClient: any ObjectStorageClient
     private let compressor = Compressor()
+    private var invalidArtifactKeys: Set<String> = []
 
     public init(config: S3StorageConfig, storagePrefix: String? = nil) throws {
         self.storageClient = switch config {
         case .publicURL(let endpoint, let bucket): PublicURLObjectStorageClient(endpoint: endpoint, bucket: bucket)
         case .authorized(let authorizedConfiguration): APIObjectStorageClient(authorizedConfiguration)
         }
+        self.storagePrefix = storagePrefix
+    }
+
+    init(storageClient: any ObjectStorageClient, storagePrefix: String? = nil) {
+        self.storageClient = storageClient
         self.storagePrefix = storagePrefix
     }
 
@@ -92,6 +98,45 @@ public actor S3Storage: FrameworkCacheStorage {
         let data = try compressor.compress(frameworkPath)
         let objectStorageKey = try constructObjectStorageKey(from: cacheKey)
         try await storageClient.putObject(data, at: objectStorageKey)
+    }
+
+    public func existsArtifact(for cacheKey: some CacheKey, kind: ArtifactKind) async throws -> Bool {
+        let key = try constructArtifactKey(from: cacheKey, kind: kind)
+        guard !invalidArtifactKeys.contains(key) else { return false }
+        return try await storageClient.isExistObject(at: key)
+    }
+
+    public func fetchArtifact(for cacheKey: some CacheKey, kind: ArtifactKind, to destination: URL) async throws {
+        let key = try constructArtifactKey(from: cacheKey, kind: kind)
+        let archive = try await storageClient.fetchObject(at: key)
+        do {
+            try compressor.extract(archive, to: destination)
+        } catch {
+            invalidArtifactKeys.insert(key)
+            throw error
+        }
+    }
+
+    public func cacheArtifact(_ artifact: URL, for cacheKey: some CacheKey, kind: ArtifactKind) async throws {
+        let key = try constructArtifactKey(from: cacheKey, kind: kind)
+        let data = try compressor.compress(artifact)
+        try await storageClient.putObject(data, at: key)
+        invalidArtifactKeys.remove(key)
+    }
+
+    public func removeArtifact(for cacheKey: some CacheKey, kind: ArtifactKind) async throws {
+        // Consumers may lack delete permission; a producer can replace the invalid object.
+        try invalidArtifactKeys.insert(constructArtifactKey(from: cacheKey, kind: kind))
+    }
+
+    private func constructArtifactKey(from cacheKey: some CacheKey, kind: ArtifactKind) throws -> String {
+        let namespace = switch kind {
+        case .macroPlugin: "Macros"
+        }
+        let archiveName = try "\(cacheKey.calculateChecksum()).aar"
+        return [storagePrefix, namespace, cacheKey.targetName, archiveName]
+            .compactMap { $0 }
+            .joined(separator: "/")
     }
 
     private func constructObjectStorageKey(from cacheKey: some CacheKey) throws -> String {
