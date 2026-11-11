@@ -63,7 +63,7 @@ extension AuthorizedConfiguration {
     }
 }
 
-public actor S3Storage: FrameworkCacheStorage, ArtifactCacheStorage {
+public actor S3Storage: FrameworkCacheStorage {
     private let storagePrefix: String?
     private let storageClient: any ObjectStorageClient
     private let compressor = Compressor()
@@ -100,6 +100,17 @@ public actor S3Storage: FrameworkCacheStorage, ArtifactCacheStorage {
         try await storageClient.putObject(data, at: objectStorageKey)
     }
 
+    private func constructObjectStorageKey(from cacheKey: some CacheKey) throws -> String {
+        let frameworkName = cacheKey.targetName
+        let checksum = try cacheKey.calculateChecksum()
+        let archiveName = "\(checksum).aar"
+        return [storagePrefix, frameworkName, archiveName]
+            .compactMap { $0 }
+            .joined(separator: "/")
+    }
+}
+
+extension S3Storage: ArtifactCacheStorage {
     public func existsArtifact(for cacheKey: some CacheKey, kind: ArtifactKind) async throws -> Bool {
         let key = try constructArtifactKey(from: cacheKey, kind: kind)
         guard !invalidArtifactKeys.contains(key) else { return false }
@@ -135,15 +146,6 @@ public actor S3Storage: FrameworkCacheStorage, ArtifactCacheStorage {
         }
         let archiveName = try "\(cacheKey.calculateChecksum()).aar"
         return [storagePrefix, namespace, cacheKey.targetName, archiveName]
-            .compactMap { $0 }
-            .joined(separator: "/")
-    }
-
-    private func constructObjectStorageKey(from cacheKey: some CacheKey) throws -> String {
-        let frameworkName = cacheKey.targetName
-        let checksum = try cacheKey.calculateChecksum()
-        let archiveName = "\(checksum).aar"
-        return [storagePrefix, frameworkName, archiveName]
             .compactMap { $0 }
             .joined(separator: "/")
     }
