@@ -2,15 +2,15 @@ import CacheStorage
 import Foundation
 import ScipioKit
 @testable import ScipioS3Storage
-import XCTest
+import Testing
 
-final class S3ArtifactCacheTests: XCTestCase {
+struct S3ArtifactCacheTests {
     private struct TestCacheKey: CacheKey {
         let targetName: String
         let revision: String
     }
 
-    func testMacroAndFrameworkRoundTripUseSeparateKeys() async throws {
+    @Test func `macro and framework round trips use separate keys`() async throws {
         let manager = FileManager.default
         let root = manager.temporaryDirectory.appending(path: UUID().uuidString)
         defer { try? manager.removeItem(at: root) }
@@ -25,15 +25,15 @@ final class S3ArtifactCacheTests: XCTestCase {
         let key = TestCacheKey(targetName: "ExamplePlugin", revision: "one")
         let checksum = try key.calculateChecksum()
         let missing = try await storage.existsArtifact(for: key, kind: .macroPlugin)
-        XCTAssertFalse(missing)
+        #expect(!missing)
 
         try await storage.cacheFramework(framework, for: key)
         try await storage.cacheArtifact(artifact, for: key, kind: .macroPlugin)
 
         let keys = await client.keys()
-        XCTAssertEqual(keys, ["prefix/ExamplePlugin/\(checksum).aar", "prefix/Macros/ExamplePlugin/\(checksum).aar"])
+        #expect(keys == ["prefix/ExamplePlugin/\(checksum).aar", "prefix/Macros/ExamplePlugin/\(checksum).aar"])
         let exists = try await storage.existsArtifact(for: key, kind: .macroPlugin)
-        XCTAssertTrue(exists)
+        #expect(exists)
 
         let restoredArtifact = root.appending(path: "restored-plugin")
         let restoredFrameworkRoot = root.appending(path: "restored-framework")
@@ -41,20 +41,19 @@ final class S3ArtifactCacheTests: XCTestCase {
         try await storage.fetchArtifacts(for: key, to: restoredFrameworkRoot)
 
         let restoredExecutable = restoredArtifact.appending(path: "ExamplePlugin")
-        XCTAssertEqual(try Data(contentsOf: restoredExecutable), payload)
-        XCTAssertTrue(manager.isExecutableFile(atPath: restoredExecutable.path))
-        XCTAssertEqual(try Data(contentsOf: restoredArtifact.appending(path: "artifact.json")), Data("manifest".utf8))
-        XCTAssertEqual(
-            try Data(contentsOf: restoredArtifact.appending(components: "Resources", "data")),
-            Data("resource".utf8)
+        #expect(try Data(contentsOf: restoredExecutable) == payload)
+        #expect(manager.isExecutableFile(atPath: restoredExecutable.path))
+        #expect(try Data(contentsOf: restoredArtifact.appending(path: "artifact.json")) == Data("manifest".utf8))
+        #expect(
+            try Data(contentsOf: restoredArtifact.appending(components: "Resources", "data")) == Data("resource".utf8)
         )
-        XCTAssertEqual(
-            try manager.destinationOfSymbolicLink(atPath: restoredArtifact.appending(path: "resource-link").path),
-            "Resources/data"
+        #expect(
+            try manager.destinationOfSymbolicLink(atPath: restoredArtifact.appending(path: "resource-link").path)
+                == "Resources/data"
         )
-        XCTAssertEqual(
-            try Data(contentsOf: restoredFrameworkRoot.appending(components: "ExamplePlugin.xcframework", "binary")),
-            Data("framework".utf8)
+        #expect(
+            try Data(contentsOf: restoredFrameworkRoot.appending(components: "ExamplePlugin.xcframework", "binary"))
+                == Data("framework".utf8)
         )
     }
 
@@ -75,7 +74,7 @@ final class S3ArtifactCacheTests: XCTestCase {
         return payload
     }
 
-    func testInvalidArtifactIsReplacedOnlyByAProducer() async throws {
+    @Test func `invalid artifact is replaced only by a producer`() async throws {
         let manager = FileManager.default
         let root = manager.temporaryDirectory.appending(path: UUID().uuidString)
         defer { try? manager.removeItem(at: root) }
@@ -92,19 +91,19 @@ final class S3ArtifactCacheTests: XCTestCase {
         try await storage.removeArtifact(for: key, kind: .macroPlugin)
         let markedInvalid = try await storage.existsArtifact(for: key, kind: .macroPlugin)
         let stillInStorage = try await otherConsumer.existsArtifact(for: key, kind: .macroPlugin)
-        XCTAssertFalse(markedInvalid)
-        XCTAssertTrue(stillInStorage)
+        #expect(!markedInvalid)
+        #expect(stillInStorage)
 
         try await storage.cacheArtifact(root, for: key, kind: .macroPlugin)
         let repaired = try await storage.existsArtifact(for: key, kind: .macroPlugin)
-        XCTAssertTrue(repaired)
+        #expect(repaired)
         let destination = manager.temporaryDirectory.appending(path: UUID().uuidString)
         defer { try? manager.removeItem(at: destination) }
         try await otherConsumer.fetchArtifact(for: key, kind: .macroPlugin, to: destination)
-        XCTAssertEqual(try Data(contentsOf: destination.appending(path: "plugin")), Data("valid".utf8))
+        #expect(try Data(contentsOf: destination.appending(path: "plugin")) == Data("valid".utf8))
     }
 
-    func testUnreadableArchiveIsMarkedInvalid() async throws {
+    @Test func `unreadable archive is marked invalid`() async throws {
         let manager = FileManager.default
         let root = manager.temporaryDirectory.appending(path: UUID().uuidString)
         defer { try? manager.removeItem(at: root) }
@@ -114,18 +113,16 @@ final class S3ArtifactCacheTests: XCTestCase {
         let objectKey = try "Macros/ExamplePlugin/\(key.calculateChecksum()).aar"
         try await client.putObject(Data("corrupt archive".utf8), at: objectKey)
 
-        do {
+        await #expect(throws: (any Error).self) {
             try await storage.fetchArtifact(for: key, kind: .macroPlugin, to: root)
-            XCTFail("An invalid archive must not be restored")
-        } catch {
-            let available = try await storage.existsArtifact(for: key, kind: .macroPlugin)
-            XCTAssertFalse(available)
         }
+        let available = try await storage.existsArtifact(for: key, kind: .macroPlugin)
+        #expect(!available)
         let keys = await client.keys()
-        XCTAssertEqual(keys, [objectKey])
+        #expect(keys == [objectKey])
     }
 
-    func testScipioRestoresFrameworkAndMacroFromStorage() async throws {
+    @Test func `scipio restores framework and macro from storage`() async throws {
         let manager = FileManager.default
         let root = manager.temporaryDirectory.appending(path: UUID().uuidString)
         defer { try? manager.removeItem(at: root) }
@@ -147,27 +144,27 @@ final class S3ArtifactCacheTests: XCTestCase {
         let macroVersion = root.appending(components: "MacroPlugins", ".FixturePlugin.version")
         let original = try Data(contentsOf: executable)
         let objectKeys = await client.keys()
-        XCTAssertTrue(objectKeys.contains { $0.hasPrefix("cache/FixtureLibrary/") })
-        XCTAssertTrue(objectKeys.contains { $0.hasPrefix("cache/Macros/FixturePlugin/") })
+        #expect(objectKeys.contains { $0.hasPrefix("cache/FixtureLibrary/") })
+        #expect(objectKeys.contains { $0.hasPrefix("cache/Macros/FixturePlugin/") })
 
         try manager.removeItem(at: macroDirectory)
         try manager.removeItem(at: macroVersion)
         try await runner.run(packageDirectory: package, frameworkOutputDir: .custom(output))
         let firstFetches = await client.fetched()
-        XCTAssertTrue(firstFetches.contains { $0.hasPrefix("cache/Macros/FixturePlugin/") })
-        XCTAssertFalse(firstFetches.contains { $0.hasPrefix("cache/FixtureLibrary/") })
-        XCTAssertEqual(try Data(contentsOf: executable), original)
+        #expect(firstFetches.contains { $0.hasPrefix("cache/Macros/FixturePlugin/") })
+        #expect(!firstFetches.contains { $0.hasPrefix("cache/FixtureLibrary/") })
+        #expect(try Data(contentsOf: executable) == original)
 
         try manager.removeItem(at: framework)
         try manager.removeItem(at: macroDirectory)
         try manager.removeItem(at: macroVersion)
         try await runner.run(packageDirectory: package, frameworkOutputDir: .custom(output))
         let allFetches = await client.fetched()
-        XCTAssertTrue(allFetches.contains { $0.hasPrefix("cache/FixtureLibrary/") })
-        XCTAssertTrue(manager.fileExists(atPath: framework.path))
-        XCTAssertTrue(manager.isExecutableFile(atPath: executable.path))
-        XCTAssertEqual(try Data(contentsOf: executable), original)
-        XCTAssertTrue(manager.fileExists(atPath: macroVersion.path))
+        #expect(allFetches.contains { $0.hasPrefix("cache/FixtureLibrary/") })
+        #expect(manager.fileExists(atPath: framework.path))
+        #expect(manager.isExecutableFile(atPath: executable.path))
+        #expect(try Data(contentsOf: executable) == original)
+        #expect(manager.fileExists(atPath: macroVersion.path))
     }
 
     private func makeMacroPackage(at root: URL) throws -> URL {
