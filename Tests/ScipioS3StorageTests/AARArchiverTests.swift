@@ -1,45 +1,36 @@
-import XCTest
+import Foundation
 @testable import ScipioS3Storage
+import Testing
 
-final class AARArchiverTests: XCTestCase {
+final class AARArchiverTests {
     private let fileManager = FileManager.default
-    private var workspacePath: URL!
+    private let workspacePath: URL
 
-    override func setUp() async throws {
-        workspacePath = fileManager.temporaryDirectory.appendingPathComponent("org.giginet.ScipioS3StorageTests")
-
+    init() throws {
+        workspacePath = fileManager.temporaryDirectory.appending(path: UUID().uuidString)
         try fileManager.createDirectory(at: workspacePath, withIntermediateDirectories: true)
     }
 
-    func testRoundTrips() throws {
-        let xcframeworkPath = workspacePath.appendingPathComponent("\(UUID().uuidString).xcframework")
+    deinit {
+        try? fileManager.removeItem(at: workspacePath)
+    }
+
+    @Test func `round trip preserves file contents`() throws {
+        let xcframeworkPath = workspacePath.appending(path: "source.xcframework")
         try fileManager.createDirectory(at: xcframeworkPath, withIntermediateDirectories: true)
 
         let fileName = "hello.txt"
         let fileBody = UUID().uuidString
-
-        fileManager.createFile(
-            atPath: xcframeworkPath.appendingPathComponent(fileName).path,
-            contents: fileBody.data(using: .utf8)
-        )
+        try Data(fileBody.utf8).write(to: xcframeworkPath.appending(path: fileName))
 
         let archiver = try AARArchiver()
-        let compressed = try XCTUnwrap(archiver.compress(xcframeworkPath))
-        XCTAssertFalse(compressed.isEmpty, "Compression should be succeed")
+        let compressed = try archiver.compress(xcframeworkPath)
+        #expect(!compressed.isEmpty)
 
-        let extractedPath = workspacePath.appendingPathComponent("\(UUID().uuidString).xcframework")
+        let extractedPath = workspacePath.appending(path: "restored.xcframework")
         try archiver.extract(compressed, to: extractedPath)
 
-        let fileContents = try XCTUnwrap(
-            fileManager.contents(atPath: extractedPath.appendingPathComponent(fileName).path)
-        )
-        XCTAssertEqual(
-            String(bytes: fileContents, encoding: .utf8),
-            fileBody
-        )
-    }
-
-    override func tearDown() async throws {
-        try fileManager.removeItem(at: workspacePath)
+        let fileContents = try #require(fileManager.contents(atPath: extractedPath.appending(path: fileName).path))
+        #expect(String(bytes: fileContents, encoding: .utf8) == fileBody)
     }
 }

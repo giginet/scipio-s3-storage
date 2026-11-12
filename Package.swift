@@ -19,7 +19,7 @@ let package = Package(
         .package(url: "https://github.com/soto-project/soto-core.git",
                  from: "7.3.2"),
         .package(url: "https://github.com/giginet/Scipio.git",
-                 from: "0.32.0"),
+                 revision: "b99ce7ace5cbf2db43b53e9732449e2bb76f961c"),
     ],
     targets: [
         .target(
@@ -34,7 +34,10 @@ let package = Package(
         ),
         .testTarget(
             name: "ScipioS3StorageTests",
-            dependencies: ["ScipioS3Storage"]),
+            dependencies: [
+                "ScipioS3Storage",
+                .product(name: "ScipioKit", package: "Scipio"),
+            ]),
     ],
     swiftLanguageModes: [.v6]
 )
