@@ -12,13 +12,13 @@ jobs:
     strategy:
       matrix:
         xcode_version:
-          - "16.2" # 6.0
-          # Comment out this once it's available
-          # - "16.3" # 6.1
+          - "26.0.1" # Swift 6.2
     env: 
       DEVELOPER_DIR: "/Applications/Xcode_${{ matrix.xcode_version }}.app/Contents/Developer"
     runs-on: macos-15
     steps:
+    - name: Get Swift version
+      run: swift --version
     - uses: actions/checkout@v4
     - name: Install SwiftLint
       run: brew install swiftlint
